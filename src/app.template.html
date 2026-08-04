@@ -86,8 +86,8 @@ footer{margin-top:34px;font-size:12.5px;color:var(--soft);max-width:78ch}
   text-transform:none}
 .fskey:hover{border-color:var(--ink);color:var(--ink)}
 .fskey:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
-#viz:fullscreen{background:var(--paper);padding:24px;display:flex;flex-direction:column}
-#viz:fullscreen svg{flex:1 1 auto;min-height:0;width:100%;height:100%}
+.wrap:fullscreen{background:var(--paper);max-width:none;width:100%;height:100%;
+  overflow:auto;padding:26px 40px 44px}
 
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -103,10 +103,10 @@ footer{margin-top:34px;font-size:12.5px;color:var(--soft);max-width:78ch}
   <div class="verdict" id="verdict"></div>
 
   <div class="grid">
-    <div class="card" id="viz">
+    <div class="card">
       <h2 style="display:flex;justify-content:space-between;align-items:center;gap:10px">
         <span>County triage</span>
-        <button class="fskey" id="fskey" title="Toggle fullscreen">Press F &#10530;</button>
+        <button class="fskey" id="fskey" title="Toggle fullscreen (whole panel)">Press F &#10530;</button>
       </h2>
       <div class="modes" role="group" aria-label="Map display mode">
         <button id="m-choro" aria-pressed="true">By land area</button>
@@ -317,8 +317,8 @@ function render(){
   document.getElementById(id).addEventListener('input', render));
 setMode('choro');
 
-/* --- fullscreen: press F to blow the map up to fill the screen --- */
-const viz = document.getElementById('viz');
+/* --- fullscreen: press F to fill the screen with the whole panel --- */
+const viz = document.querySelector('.wrap');
 const fsBtn = document.getElementById('fskey');
 
 function fsElement(){ return document.fullscreenElement || document.webkitFullscreenElement; }
