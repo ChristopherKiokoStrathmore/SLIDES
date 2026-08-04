@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kenya outbreak capacity - county triage</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#E4E9E7; --panel:#F4F7F6; --line:#C6D0CC;
+  --ink:#141D1A; --soft:#5C6D68;
+  --immediate:#A9322A; --delayed:#B9741A; --holding:#2F6F55;
+  --mono:"JetBrains Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);
+  font-family:Archivo,system-ui,sans-serif;font-size:15px;line-height:1.55}
+.wrap{max-width:1240px;margin:0 auto;padding:28px 20px 60px}
+
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--soft);margin:0 0 10px}
+h1{font-size:clamp(28px,4.4vw,46px);font-weight:700;letter-spacing:-.025em;
+  line-height:1.04;margin:0 0 6px;max-width:16ch}
+.sub{color:var(--soft);max-width:60ch;margin:0 0 24px}
+
+.verdict{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+  gap:2px;background:var(--line);border:1px solid var(--line);margin-bottom:26px}
+.vcard{background:var(--panel);padding:13px 15px}
+.vcard .k{font-family:var(--mono);font-size:10px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--soft)}
+.vcard .v{font-weight:700;font-size:19px;letter-spacing:-.01em;margin:2px 0 1px}
+.vcard .d{font-size:12.5px;color:var(--soft);font-family:var(--mono)}
+.pass{color:var(--holding)} .fail{color:var(--immediate)}
+
+.grid{display:grid;grid-template-columns:1.35fr 1fr;gap:22px;align-items:start}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+
+.card{background:var(--panel);border:1px solid var(--line);padding:16px}
+.card h2{font-size:12px;font-family:var(--mono);letter-spacing:.12em;
+  text-transform:uppercase;color:var(--soft);margin:0 0 12px;font-weight:400}
+
+.modes{display:flex;gap:0;margin-bottom:10px;border:1px solid var(--line);width:fit-content}
+.modes button{font-family:Archivo;font-size:12.5px;padding:6px 13px;border:0;
+  background:transparent;color:var(--soft);cursor:pointer}
+.modes button[aria-pressed=true]{background:var(--ink);color:var(--panel)}
+.modes button:focus-visible{outline:2px solid var(--ink);outline-offset:-2px}
+
+svg{display:block;width:100%;height:auto}
+.cty{stroke:var(--panel);stroke-width:.6;cursor:pointer;transition:fill .35s ease}
+.cty:hover{stroke:var(--ink);stroke-width:1.4}
+.cty[aria-selected=true]{stroke:var(--ink);stroke-width:2}
+.bub{stroke:var(--panel);stroke-width:1;cursor:pointer;transition:fill .35s ease}
+
+.ctrl{margin-bottom:15px}
+.ctrl label{display:flex;justify-content:space-between;align-items:baseline;
+  font-size:13px;margin-bottom:5px}
+.ctrl .num{font-family:var(--mono);font-weight:700;font-size:13px}
+input[type=range]{width:100%;accent-color:var(--ink);height:20px}
+input[type=range]:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+.hint{font-size:11.5px;color:var(--soft);margin:-2px 0 0}
+
+.band{margin-top:14px}
+.bandhead{display:flex;justify-content:space-between;align-items:baseline;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;
+  text-transform:uppercase;padding-bottom:4px;border-bottom:2px solid currentColor}
+.tags{display:flex;flex-wrap:wrap;gap:4px;padding-top:7px}
+.tag{font-size:12px;padding:2px 7px;border:1px solid currentColor;cursor:pointer;
+  background:transparent;font-family:Archivo;transition:transform .3s ease}
+.tag:hover{background:currentColor}
+.tag:hover span{color:var(--panel)}
+.tag span{color:var(--ink)}
+.tag .n{font-family:var(--mono);opacity:.65;margin-left:5px}
+
+.detail{margin-top:22px;background:var(--panel);border:1px solid var(--line);padding:16px}
+.dgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:14px}
+.dgrid div span{display:block;font-family:var(--mono);font-size:10px;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--soft)}
+.dgrid div b{font-size:19px;font-weight:700;letter-spacing:-.02em}
+footer{margin-top:34px;font-size:12.5px;color:var(--soft);max-width:78ch}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Master Facility List 2017 &times; Population Census 2019</p>
+  <h1>Which counties run out of beds first?</h1>
+  <p class="sub">Every county is triaged by the cumulative attack rate at which its
+  surge inpatient capacity is exhausted. Move the scenario controls and the counties
+  re-triage. The hypothesis is re-tested on every change.</p>
+
+  <div class="verdict" id="verdict"></div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>County triage</h2>
+      <div class="modes" role="group" aria-label="Map display mode">
+        <button id="m-choro" aria-pressed="true">By land area</button>
+        <button id="m-bubble" aria-pressed="false">By population</button>
+      </div>
+      <p class="hint" id="modehint">A choropleth gives half the image to the arid north, where under a tenth of Kenyans live.</p>
+      <svg id="map" viewBox="0 0 640 620" role="img"
+           aria-label="Map of Kenya's 47 counties coloured by outbreak triage band"></svg>
+    </div>
+
+    <div>
+      <div class="card">
+        <h2>Outbreak scenario</h2>
+        <div class="ctrl">
+          <label for="s-plan">Planning attack rate <span class="num" id="v-plan">5%</span></label>
+          <input type="range" id="s-plan" min="1" max="30" step="1" value="5">
+          <p class="hint">Share of the population infected across the wave that you plan for.</p>
+        </div>
+        <div class="ctrl">
+          <label for="s-hosp">Hospitalisation rate <span class="num" id="v-hosp">5.0%</span></label>
+          <input type="range" id="s-hosp" min="5" max="100" step="5" value="50">
+        </div>
+        <div class="ctrl">
+          <label for="s-occ">Baseline bed occupancy <span class="num" id="v-occ">65%</span></label>
+          <input type="range" id="s-occ" min="30" max="90" step="5" value="65">
+        </div>
+        <div class="ctrl">
+          <label for="s-los">Mean length of stay <span class="num" id="v-los">8 days</span></label>
+          <input type="range" id="s-los" min="3" max="16" step="1" value="8">
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:18px">
+        <h2>Triage board</h2>
+        <div class="band" style="color:var(--immediate)">
+          <div class="bandhead"><span>Immediate</span><span id="n-imm">0</span></div>
+          <div class="tags" id="b-imm"></div>
+        </div>
+        <div class="band" style="color:var(--delayed)">
+          <div class="bandhead"><span>Delayed</span><span id="n-del">0</span></div>
+          <div class="tags" id="b-del"></div>
+        </div>
+        <div class="band" style="color:var(--holding)">
+          <div class="bandhead"><span>Holding</span><span id="n-hold">0</span></div>
+          <div class="tags" id="b-hold"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="detail" id="detail"></div>
+
+  <footer>Beds and cots from the Kenya Master Health Facility List (Aug 2017);
+  population from the 2019 Census. Wave length fixed at 12 weeks with peak daily
+  incidence at 2.5&times; the wave average. The dataset carries no ICU, oxygen,
+  laboratory or staffing information, so every figure here is an optimistic bound.</footer>
+</div>
+
+<script src="vendor/d3.min.js"></script>
+<script>
+const DATA = __DATA__
+const WAVE = 84, PEAK = 2.5, UPLIFT = 1.20;
+const F = DATA.features;
+const NAT_POP = d3.sum(F, d => d.properties.pop);
+const NAT_BEDS = d3.sum(F, d => d.properties.beds);
+const BAND = {imm:'var(--immediate)', del:'var(--delayed)', hold:'var(--holding)'};
+
+let mode = 'choro', selected = null;
+
+function params(){
+  return {
+    plan: +document.getElementById('s-plan').value / 100,
+    hosp: +document.getElementById('s-hosp').value / 1000,
+    occ:  +document.getElementById('s-occ').value / 100,
+    los:  +document.getElementById('s-los').value
+  };
+}
+
+function breakAR(pop, beds, p){
+  const surge = beds * (1 - p.occ) * UPLIFT;
+  return surge * WAVE / (pop * p.hosp * p.los * PEAK);
+}
+
+function bandOf(ar, p){
+  if (ar < p.plan) return 'imm';
+  if (ar < p.plan * 2) return 'del';
+  return 'hold';
+}
+
+/* --- map --- */
+const svg = d3.select('#map');
+const proj = d3.geoMercator().fitSize([640, 620], DATA);
+const path = d3.geoPath(proj);
+const gPoly = svg.append('g');
+const gBub = svg.append('g');
+const rScale = d3.scaleSqrt().domain([0, d3.max(F, d => d.properties.pop)]).range([0, 30]);
+
+gPoly.selectAll('path').data(F).join('path')
+  .attr('class','cty').attr('d', path)
+  .on('click', (e,d) => select(d.properties.ckey))
+  .append('title');
+
+gBub.selectAll('circle').data(F).join('circle')
+  .attr('class','bub')
+  .attr('cx', d => proj([d.properties.lon, d.properties.lat])[0])
+  .attr('cy', d => proj([d.properties.lon, d.properties.lat])[1])
+  .attr('r',  d => rScale(d.properties.pop))
+  .on('click', (e,d) => select(d.properties.ckey))
+  .append('title');
+
+function setMode(m){
+  mode = m;
+  document.getElementById('m-choro').setAttribute('aria-pressed', m==='choro');
+  document.getElementById('m-bubble').setAttribute('aria-pressed', m==='bubble');
+  document.getElementById('modehint').textContent = m === 'choro'
+    ? 'A choropleth gives half the image to the arid north, where under a tenth of Kenyans live.'
+    : 'Circles scaled to population. The same numbers, weighted by people rather than hectares.';
+  gBub.style('display', m==='bubble' ? null : 'none');
+  gPoly.selectAll('path').style('fill', m==='bubble' ? '#DDE3E1' : null);
+  render();
+}
+document.getElementById('m-choro').onclick = () => setMode('choro');
+document.getElementById('m-bubble').onclick = () => setMode('bubble');
+
+function select(ckey){ selected = ckey; render(); }
+
+/* --- render --- */
+function render(){
+  const p = params();
+  document.getElementById('v-plan').textContent = (p.plan*100).toFixed(0) + '%';
+  document.getElementById('v-hosp').textContent = (p.hosp*100).toFixed(1) + '%';
+  document.getElementById('v-occ').textContent  = (p.occ*100).toFixed(0) + '%';
+  document.getElementById('v-los').textContent  = p.los + ' days';
+
+  const rows = F.map(f => {
+    const q = f.properties;
+    const ar = breakAR(q.pop, q.beds, p);
+    return {...q, ar, band: bandOf(ar, p)};
+  }).sort((a,b) => a.ar - b.ar);
+
+  const by = new Map(rows.map(r => [r.ckey, r]));
+  const fill = d => BAND[by.get(d.properties.ckey).band];
+
+  if (mode === 'choro') gPoly.selectAll('path').style('fill', fill);
+  gBub.selectAll('circle').style('fill', fill);
+  gPoly.selectAll('path').attr('aria-selected', d => d.properties.ckey === selected)
+    .select('title').text(d => {
+      const r = by.get(d.properties.ckey);
+      return `${r.county}: beds run out at ${(r.ar*100).toFixed(1)}% attack rate`;
+    });
+  gBub.selectAll('circle').select('title').text(d => {
+    const r = by.get(d.properties.ckey);
+    return `${r.county}: ${(r.pop/1e6).toFixed(2)}M people, breaks at ${(r.ar*100).toFixed(1)}%`;
+  });
+
+  /* triage board */
+  const groups = {imm:[], del:[], hold:[]};
+  rows.forEach(r => groups[r.band].push(r));
+  const ids = {imm:['b-imm','n-imm'], del:['b-del','n-del'], hold:['b-hold','n-hold']};
+  for (const k in groups){
+    document.getElementById(ids[k][1]).textContent = groups[k].length;
+    document.getElementById(ids[k][0]).innerHTML = groups[k].map(r =>
+      `<button class="tag" data-k="${r.ckey}"><span>${r.county}</span><span class="n">${(r.ar*100).toFixed(1)}</span></button>`
+    ).join('');
+  }
+  document.querySelectorAll('.tag').forEach(t =>
+    t.onclick = () => select(t.dataset.k));
+
+  /* hypothesis verdicts */
+  const natAR = breakAR(NAT_POP, NAT_BEDS, p);
+  const asc = [...rows].sort((a,b) => a.beds/a.pop - b.beds/b.pop);
+  let cum = 0, wb = 0, wp = 0;
+  for (const r of asc){ if (cum + r.pop > NAT_POP/2) break; cum += r.pop; wb += r.beds; wp += r.pop; }
+  const natRate = NAT_BEDS/NAT_POP*1e4, halfRate = wb/wp*1e4;
+  const conc = rows.filter(r => r.largest_share > 1/3).length;
+
+  const V = [
+    ['H1 aggregate', natAR >= 0.10, `exhausted at ${(natAR*100).toFixed(1)}% attack rate`],
+    ['H2 distribution', halfRate >= 0.85*natRate,
+      `worse-served half at ${(halfRate/natRate*100).toFixed(0)}% of national`],
+    ['H3 resilience', conc === 0, `${conc} counties keep >1/3 of beds in one facility`],
+    ['Verdict', natAR >= 0.10 && halfRate >= 0.85*natRate && conc === 0,
+      `${groups.imm.length} of 47 counties immediate`]
+  ];
+  document.getElementById('verdict').innerHTML = V.map(([k,ok,d]) =>
+    `<div class="vcard"><div class="k">${k}</div>
+     <div class="v ${ok?'pass':'fail'}">${ok?'Supported':'Falsified'}</div>
+     <div class="d">${d}</div></div>`).join('');
+
+  /* detail */
+  const r = selected ? by.get(selected) : rows[0];
+  document.getElementById('detail').innerHTML = `
+    <h2 style="font-size:12px;font-family:var(--mono);letter-spacing:.12em;
+      text-transform:uppercase;color:var(--soft);margin:0 0 12px;font-weight:400">
+      ${r.county} County${selected?'':' - most exposed'}</h2>
+    <div class="dgrid">
+      <div><span>Population</span><b>${(r.pop/1e6).toFixed(2)}M</b></div>
+      <div><span>Inpatient places</span><b>${r.beds.toLocaleString()}</b></div>
+      <div><span>Beds per 10k</span><b>${r.beds_per_10k.toFixed(1)}</b></div>
+      <div><span>Bedded facilities</span><b>${r.n_bedded}</b></div>
+      <div><span>Largest holds</span><b>${(r.largest_share*100).toFixed(0)}%</b></div>
+      <div><span>Level 5/6</span><b>${r.lvl5plus || 'none'}</b></div>
+      <div><span>Breaks at</span><b>${(r.ar*100).toFixed(1)}%</b></div>
+    </div>`;
+}
+
+['s-plan','s-hosp','s-occ','s-los'].forEach(id =>
+  document.getElementById(id).addEventListener('input', render));
+setMode('choro');
+</script>
+</body>
+</html>
