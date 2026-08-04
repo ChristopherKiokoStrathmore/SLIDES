@@ -79,6 +79,16 @@ input[type=range]:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
   letter-spacing:.1em;text-transform:uppercase;color:var(--soft)}
 .dgrid div b{font-size:19px;font-weight:700;letter-spacing:-.02em}
 footer{margin-top:34px;font-size:12.5px;color:var(--soft);max-width:78ch}
+
+.fskey{font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;
+  border:1px solid var(--line);border-radius:3px;padding:3px 7px;color:var(--soft);
+  background:transparent;cursor:pointer;white-space:nowrap;user-select:none;
+  text-transform:none}
+.fskey:hover{border-color:var(--ink);color:var(--ink)}
+.fskey:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+#viz:fullscreen{background:var(--paper);padding:24px;display:flex;flex-direction:column}
+#viz:fullscreen svg{flex:1 1 auto;min-height:0;width:100%;height:100%}
+
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -93,8 +103,11 @@ footer{margin-top:34px;font-size:12.5px;color:var(--soft);max-width:78ch}
   <div class="verdict" id="verdict"></div>
 
   <div class="grid">
-    <div class="card">
-      <h2>County triage</h2>
+    <div class="card" id="viz">
+      <h2 style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+        <span>County triage</span>
+        <button class="fskey" id="fskey" title="Toggle fullscreen">Press F &#10530;</button>
+      </h2>
       <div class="modes" role="group" aria-label="Map display mode">
         <button id="m-choro" aria-pressed="true">By land area</button>
         <button id="m-bubble" aria-pressed="false">By population</button>
@@ -303,6 +316,39 @@ function render(){
 ['s-plan','s-hosp','s-occ','s-los'].forEach(id =>
   document.getElementById(id).addEventListener('input', render));
 setMode('choro');
+
+/* --- fullscreen: press F to blow the map up to fill the screen --- */
+const viz = document.getElementById('viz');
+const fsBtn = document.getElementById('fskey');
+
+function fsElement(){ return document.fullscreenElement || document.webkitFullscreenElement; }
+function toggleFullscreen(){
+  if (fsElement()){
+    (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+  } else {
+    (viz.requestFullscreen || viz.webkitRequestFullscreen).call(viz);
+  }
+}
+
+function typingIn(t){
+  return t && (t.isContentEditable || t.tagName === 'TEXTAREA' ||
+    (t.tagName === 'INPUT' && !/^(range|checkbox|radio|button|submit|reset)$/.test(t.type)));
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key !== 'f' && e.key !== 'F') return;
+  if (e.metaKey || e.ctrlKey || e.altKey || typingIn(e.target)) return;
+  e.preventDefault();
+  toggleFullscreen();
+});
+
+fsBtn.addEventListener('click', toggleFullscreen);
+
+function onFsChange(){
+  fsBtn.textContent = fsElement() ? 'F / Esc to exit' : 'Press F ⤢';
+}
+document.addEventListener('fullscreenchange', onFsChange);
+document.addEventListener('webkitfullscreenchange', onFsChange);
 </script>
 </body>
 </html>
