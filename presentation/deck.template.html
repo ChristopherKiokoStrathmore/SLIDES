@@ -77,6 +77,14 @@ body{
 h1{font-size:clamp(21px,calc(var(--u) * 3.45),52px);font-weight:750;letter-spacing:-.03em;
   line-height:1.03;max-width:24ch}
 h1 em{font-style:normal;color:var(--out)}
+/* the topic of the whole talk, on the opening slide only. It sits above the
+   headline and stays smaller than it: this says what the talk is about, the
+   headline says what happened. Slides 2 and 3 carry only their own beat. */
+.topic{
+  font-size:clamp(13px,calc(var(--u) * 1.5),22px);font-weight:700;color:var(--ink-2);
+  letter-spacing:-.01em;line-height:1.25;margin:0 0 calc(var(--u) * .75);max-width:50ch;
+  padding-bottom:calc(var(--u) * .7);border-bottom:1px solid var(--grid);
+}
 .deck-tag{text-align:right;font-size:10.5px;letter-spacing:.09em;color:var(--muted);line-height:1.65}
 .deck-tag b{display:block;color:var(--ink-2);font-weight:600;letter-spacing:.02em;font-size:11.5px}
 .lede{font-size:clamp(12.5px,calc(var(--u) * 1.24),18px);color:var(--ink-2);max-width:66ch;
@@ -224,6 +232,7 @@ input[type=range]:focus-visible{outline:2px solid var(--safe);outline-offset:3px
   <div class="head">
     <div>
       <div class="star"><span class="badge">S &middot; T</span><span class="step">Situation &amp; Task</span></div>
+      <p class="topic fade" data-a="topic">How prepared is Kenya for a disease outbreak?</p>
       <!-- deliberately not a .fade/GSAP target: Animate.css owns this element
            outright, so the two engines never contest the same property -->
       <h1 id="sl1h1">On 13 March 2020 the question stopped being <em>hypothetical</em>.</h1>
@@ -232,9 +241,9 @@ input[type=range]:focus-visible{outline:2px solid var(--safe);outline-offset:3px
       Nobody could say. Yet the answer had been sitting in a public spreadsheet since 2017.</p>
     </div>
     <div class="deck-tag">
-      <b>How prepared is Kenya for a disease outbreak?</b>
-      Kenya Master Health Facility List &times; Census 2019<br>
-      MSc Data Science &amp; Analytics, Strathmore University
+      <b>Strathmore University</b>
+      MSc Data Science &amp; Analytics<br>
+      Master Health Facility List &times; Census 2019
     </div>
   </div>
 
