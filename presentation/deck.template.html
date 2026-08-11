@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>How prepared is Kenya for a disease outbreak?</title>
+<meta name="description" content="A three-slide data story asking whether Kenya's health infrastructure could absorb a respiratory outbreak, built from the Master Health Facility List and the 2019 census.">
+<style>__ANIMATECSS__</style>
+<style>
+/* ============================================================================
+   TOKENS, dark presentation surface.
+   Band colours are the status palette (critical, warning) plus categorical
+   blue standing in for "good". Red/amber/GREEN is the conventional triage
+   ramp and it fails colour-vision separation badly: green against red
+   measures deltaE 4.1 under deuteranopia, so roughly 8% of men cannot split
+   the two bands. Red/amber/BLUE measures 24.4 on the same test, and every
+   band also carries a written label, so colour never carries meaning alone.
+   ========================================================================== */
+:root{
+  --plane:#0d0d0d; --surface:#1a1a19; --raised:#232322;
+  --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
+  --grid:#2c2c2a; --axis:#383835; --hair:rgba(255,255,255,.10);
+
+  --out:#d03b3b;      /* status critical: county is out of beds */
+  --edge:#fab219;     /* status warning */
+  --safe:#3987e5;     /* categorical blue, replaces green for CVD safety */
+
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+
+  /* A deck fails when it is sized off width alone: a 1500x600 laptop then
+     renders headlines that push the slide past the fold. Every size below is
+     derived from --u, which tracks whichever viewport dimension binds first. */
+  --u:min(1vw,1.72vh);
+  --pad:clamp(16px,calc(var(--u) * 3.1),56px);
+  --padv:clamp(12px,calc(var(--u) * 2.3),34px);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--plane);color:var(--ink);font-family:var(--sans);
+  font-size:clamp(12.5px,calc(var(--u) * 1.02),16.5px);line-height:1.5;
+  -webkit-font-smoothing:antialiased;overflow:hidden;
+}
+
+/* ---------- deck chrome ---------------------------------------------------- */
+.deck{position:relative;height:100dvh;width:100%}
+.slide{
+  position:absolute;inset:0;padding:var(--padv) var(--pad) calc(var(--padv) * 1.35);
+  display:none;grid-template-rows:auto 1fr;gap:clamp(10px,calc(var(--u) * 1.5),24px);
+  overflow-y:auto;overflow-x:hidden;
+}
+.slide.on{display:grid}
+
+.rail{position:fixed;top:0;left:0;right:0;height:3px;display:flex;gap:2px;z-index:40}
+.rail i{flex:1;background:var(--grid);transition:background .5s ease}
+.rail i.done{background:var(--ink-2)}
+.rail i.now{background:var(--out)}
+
+.hud{position:fixed;bottom:clamp(10px,1.6vh,20px);right:var(--pad);z-index:40;
+  display:flex;align-items:center;gap:14px}
+.dots{display:flex;gap:7px}
+.dots button{width:9px;height:9px;border-radius:50%;border:1px solid var(--muted);
+  background:transparent;cursor:pointer;padding:0;transition:all .3s ease}
+.dots button[aria-current=true]{background:var(--ink);border-color:var(--ink);transform:scale(1.25)}
+.dots button:focus-visible{outline:2px solid var(--safe);outline-offset:3px}
+.count{font-size:11px;letter-spacing:.16em;color:var(--muted);font-variant-numeric:tabular-nums}
+.keyhint{position:fixed;bottom:clamp(10px,1.6vh,20px);left:var(--pad);z-index:40;
+  font-size:11px;letter-spacing:.1em;color:var(--muted)}
+.keyhint b{color:var(--ink-2);font-weight:600}
+
+/* ---------- slide head ----------------------------------------------------- */
+.head{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;flex-wrap:wrap}
+.star{display:flex;align-items:center;gap:10px;margin-bottom:calc(var(--u) * .9)}
+.star .badge{font-size:10px;font-weight:700;letter-spacing:.18em;padding:3px 8px;
+  border:1px solid var(--out);color:var(--out);border-radius:2px}
+.star .step{font-size:10px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase}
+h1{font-size:clamp(21px,calc(var(--u) * 3.45),52px);font-weight:750;letter-spacing:-.03em;
+  line-height:1.03;max-width:24ch}
+h1 em{font-style:normal;color:var(--out)}
+.deck-tag{text-align:right;font-size:10.5px;letter-spacing:.09em;color:var(--muted);line-height:1.65}
+.deck-tag b{display:block;color:var(--ink-2);font-weight:600;letter-spacing:.02em;font-size:11.5px}
+.lede{font-size:clamp(12.5px,calc(var(--u) * 1.24),18px);color:var(--ink-2);max-width:66ch;
+  margin-top:calc(var(--u) * 1.1)}
+.lede strong{color:var(--ink);font-weight:650}
+@media(max-height:680px){.head{gap:18px}.lede{max-width:80ch}h1{max-width:30ch}}
+@media(max-width:1100px) and (max-height:820px){
+  h1{font-size:clamp(20px,4.2vw,30px)} .lede{font-size:13px}
+  .deck-tag{display:none} .small-print{display:none}
+  .stat .v{font-size:clamp(16px,2.6vw,22px)}
+}
+
+/* ---------- layout --------------------------------------------------------- */
+.cols{display:grid;gap:clamp(12px,calc(var(--u) * 1.9),32px);min-height:0}
+.s1{grid-template-columns:minmax(300px,.86fr) minmax(320px,1fr)}
+.s2{grid-template-columns:minmax(240px,.6fr) minmax(360px,1.4fr)}
+.s3{grid-template-columns:minmax(235px,.88fr) minmax(300px,1.2fr) minmax(225px,.85fr)}
+@media(max-width:1240px){.s3{grid-template-columns:1fr 1fr}}
+@media(max-width:1000px){.cols{grid-template-columns:1fr!important}}
+.stack{display:flex;flex-direction:column;gap:clamp(8px,calc(var(--u) * 1.35),20px);min-height:0}
+/* without this a short viewport squeezes panels below their content and the
+   text overlaps rather than the slide scrolling: a silent, ugly failure */
+.stack > *{flex-shrink:0}
+
+.panel{background:var(--surface);border:1px solid var(--hair);border-radius:3px;
+  padding:clamp(10px,calc(var(--u) * 1.45),20px);min-height:0}
+.panel > h2,.ptitle{font-size:10px;font-weight:700;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:calc(var(--u) * 1.1)}
+
+/* ---------- stat tiles ----------------------------------------------------- */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:1px;
+  background:var(--hair);border:1px solid var(--hair)}
+.stat{background:var(--surface);padding:calc(var(--u) * .95) calc(var(--u) * 1.15)}
+.stat .v{font-size:clamp(17px,calc(var(--u) * 2.05),30px);font-weight:750;letter-spacing:-.03em;
+  line-height:1.05;display:block}
+.stat .k{font-size:10.5px;color:var(--muted);letter-spacing:.05em;margin-top:3px;display:block;line-height:1.32}
+.stat.hot .v{color:var(--out)} .stat.warm .v{color:var(--edge)} .stat.cool .v{color:var(--safe)}
+
+/* ---------- slide 1: three.js facility slab -------------------------------- */
+.cloudwrap{position:relative;flex:1;min-height:180px;display:flex;flex-direction:column}
+#cloud{width:100%;flex:1;display:block;min-height:0}
+.cloudnote{font-size:12px;color:var(--ink-2);margin-top:10px;min-height:2.9em;
+  border-left:2px solid var(--grid);padding-left:11px;transition:border-color .4s ease}
+.cloudnote b{color:var(--ink);font-weight:650}
+.seg{display:flex;border:1px solid var(--hair);border-radius:2px;width:fit-content;
+  overflow:hidden;flex-wrap:wrap}
+.seg button{font-family:inherit;font-size:12px;padding:7px 13px;border:0;background:transparent;
+  color:var(--muted);cursor:pointer;transition:all .25s ease;white-space:nowrap}
+.seg button + button{border-left:1px solid var(--hair)}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--plane);font-weight:650}
+.seg button:hover:not([aria-pressed=true]){color:var(--ink);background:rgba(255,255,255,.05)}
+.seg button:focus-visible{outline:2px solid var(--safe);outline-offset:-2px}
+
+/* ---------- slide 2: the wave ---------------------------------------------- */
+.beat{display:flex;gap:12px;align-items:flex-start;padding:calc(var(--u) * 1.05) 0;
+  border-bottom:1px solid var(--grid)}
+.beat:last-child{border-bottom:0}
+.beat .n{font-size:11px;font-weight:700;color:var(--out);border:1px solid var(--out);
+  border-radius:50%;width:21px;height:21px;flex:none;display:grid;place-items:center}
+.beat .t{font-size:clamp(12px,calc(var(--u) * 1.1),15px);line-height:1.45;color:var(--ink-2)}
+.beat .t b{color:var(--ink);display:block;font-weight:650;margin-bottom:2px}
+.beat .t i{font-style:normal;color:var(--safe);font-weight:700;font-variant-numeric:tabular-nums}
+
+.wavewrap{position:relative;flex:1;min-height:190px}
+#wave{width:100%;height:100%;display:block}
+.wavectl{display:flex;align-items:center;gap:14px;margin-top:10px;flex-wrap:wrap}
+.play{font-family:inherit;font-size:12px;font-weight:650;letter-spacing:.04em;
+  background:var(--out);border:0;color:#fff;padding:8px 16px;border-radius:2px;cursor:pointer}
+.play:hover{filter:brightness(1.12)}
+.play:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.scrub{flex:1;min-width:140px}
+.scrub label{display:block;font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:3px}
+input[type=range]{width:100%;height:18px;accent-color:var(--out);cursor:pointer;background:transparent}
+input[type=range]:focus-visible{outline:2px solid var(--safe);outline-offset:3px}
+
+.tally{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:1px;
+  background:var(--hair);border:1px solid var(--hair)}
+.ty{background:var(--surface);padding:calc(var(--u) * .9) calc(var(--u) * 1.1)}
+.ty .v{font-size:clamp(19px,calc(var(--u) * 2.4),36px);font-weight:750;letter-spacing:-.03em;
+  font-variant-numeric:tabular-nums;line-height:1.05;display:block}
+.ty .k{font-size:10px;color:var(--muted);letter-spacing:.05em;margin-top:3px;display:block;line-height:1.32}
+
+/* ---------- slide 3: three pictures, almost no prose ----------------------- */
+.hero{display:flex;align-items:baseline;gap:9px;margin-bottom:calc(var(--u) * .9);flex-wrap:wrap}
+.hero .n{font-size:clamp(26px,calc(var(--u) * 3.3),48px);font-weight:750;letter-spacing:-.035em;
+  color:var(--out);font-variant-numeric:tabular-nums;line-height:1}
+.hero .of{font-size:12px;color:var(--muted)}
+.cap{font-size:11px;color:var(--ink-2);line-height:1.45;margin-top:calc(var(--u) * .9)}
+.cap b{color:var(--ink)}
+#waffle,#scatter{width:100%;height:auto;display:block}
+.figwrap{flex:1;min-height:0;display:flex;align-items:center}
+
+/* paired bars: two independent estimates of the same quantity, on one scale.
+   The audience reads agreement off the difference in bar length, which is the
+   whole point, so both bars in a group must share a baseline and a max. */
+.pv{margin-bottom:calc(var(--u) * 1.25)}
+.pv:last-of-type{margin-bottom:0}
+.pvh{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:6px}
+.pvh b{font-size:12px;font-weight:650;color:var(--ink)}
+.pvh .gap{font-size:10.5px;font-weight:700;color:var(--safe);white-space:nowrap;
+  font-variant-numeric:tabular-nums}
+.pvr{display:flex;align-items:center;gap:9px;margin-bottom:4px}
+.pvr:last-child{margin-bottom:0}
+.pvl{font-size:10.5px;color:var(--muted);width:clamp(78px,8vw,104px);flex:none;line-height:1.25}
+.pvb{flex:1;height:11px;background:var(--grid);border-radius:2px;overflow:hidden}
+.pvb i{display:block;height:100%;width:0;border-radius:0 2px 2px 0}
+.pvv{font-size:11.5px;font-weight:700;font-variant-numeric:tabular-nums;
+  width:clamp(42px,4.4vw,58px);text-align:right;flex:none}
+
+.cmp{display:flex;align-items:center;gap:9px;margin-bottom:6px}
+.cmp .cl{font-size:11px;color:var(--ink-2);width:44px;flex:none}
+.cmp .cb{flex:1;height:9px;background:var(--grid);border-radius:2px;overflow:hidden}
+.cmp .cb i{display:block;height:100%;border-radius:0 2px 2px 0}
+.cmp .cv{font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;width:32px;text-align:right;flex:none}
+
+.callout{border-left:2px solid var(--out);padding:2px 0 2px 13px;font-size:12.5px;color:var(--ink-2)}
+.callout b{color:var(--ink)}
+.live{border-left:2px solid var(--safe);padding:3px 0 3px 13px;font-size:11.5px;color:var(--ink-2);
+  line-height:1.45}
+.live b{color:var(--ink);display:block}
+/* break at the hyphens, never mid-word: "outb / reak-stress" reads as a typo
+   and an audience cannot retype a URL they have seen broken in the wrong place */
+.live code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10.5px;
+  color:var(--safe);word-break:normal;overflow-wrap:break-word;display:inline-block}
+.foot{font-size:10px;color:var(--muted);line-height:1.5;max-width:100ch}
+
+.fade{opacity:0}
+@media(prefers-reduced-motion:reduce){
+  *{transition-duration:.01ms!important;animation-duration:.01ms!important}
+  .fade{opacity:1!important}
+}
+@media print{body{overflow:visible}.slide{display:grid!important;position:static;page-break-after:always;height:100vh}
+  .hud,.keyhint,.rail{display:none}}
+</style>
+</head>
+<body>
+
+<div class="rail" aria-hidden="true"><i></i><i></i><i></i></div>
+
+<div class="deck" id="deck">
+
+<!-- ══════════════════════════ SLIDE 1: SITUATION + TASK ═══════════════════ -->
+<section class="slide on" id="sl1" aria-label="Slide 1: Situation and Task">
+  <div class="head">
+    <div>
+      <div class="star"><span class="badge">S &middot; T</span><span class="step">Situation &amp; Task</span></div>
+      <!-- deliberately not a .fade/GSAP target: Animate.css owns this element
+           outright, so the two engines never contest the same property -->
+      <h1 id="sl1h1">On 13 March 2020 the question stopped being <em>hypothetical</em>.</h1>
+      <p class="lede fade" data-a="lede">Kenya confirmed its first COVID-19 case, a traveller from London.
+      Within days every county needed an answer to one question: <strong>if this spreads, do we have the beds?</strong>
+      Nobody could say. Yet the answer had been sitting in a public spreadsheet since 2017.</p>
+    </div>
+    <div class="deck-tag">
+      <b>How prepared is Kenya for a disease outbreak?</b>
+      Kenya Master Health Facility List &times; Census 2019<br>
+      MSc Data Science &amp; Analytics, Strathmore University
+    </div>
+  </div>
+
+  <div class="cols s1">
+    <div class="stack">
+      <div class="stats fade" data-a="stats">
+        <div class="stat"><span class="v" data-count="8932">0</span><span class="k">Health facilities on the register</span></div>
+        <div class="stat"><span class="v" data-count="47.56" data-dp="2" data-suffix="M">0</span><span class="k">People they must serve</span></div>
+        <div class="stat cool"><span class="v" data-count="47">0</span><span class="k">Counties responsible for them</span></div>
+        <div class="stat hot"><span class="v" data-count="5689">0</span><span class="k">Kenyan COVID-19 deaths recorded</span></div>
+      </div>
+
+      <div class="panel fade" data-a="task" style="flex:1">
+        <h2>The task we set</h2>
+        <p style="font-size:clamp(12px,calc(var(--u) * 1.12),15.5px);color:var(--ink-2);line-height:1.55">
+          Turn a register of buildings into a <strong style="color:var(--ink)">falsifiable claim</strong> about people,
+          one that can be proved wrong, county by county, before the next outbreak rather than during it.
+        </p>
+        <p class="callout" style="margin-top:14px">
+          <b>H:</b> Kenya's existing health infrastructure has sufficient inpatient capacity to absorb a
+          moderate respiratory outbreak without counties exceeding their surge capacity.
+        </p>
+        <p class="small-print" style="font-size:11.5px;color:var(--muted);margin-top:12px;line-height:1.5">
+          The thresholds were fixed <em>before</em> the data was touched, so the result could not be tuned
+          after the fact.
+        </p>
+      </div>
+    </div>
+
+    <div class="panel fade" data-a="cloud" style="display:flex;flex-direction:column">
+      <h2>Every facility in Kenya, one point each</h2>
+      <div class="seg" role="group" aria-label="Filter the facility block" style="margin-bottom:12px">
+        <button id="f-all" aria-pressed="true">All 8,932</button>
+        <button id="f-beds" aria-pressed="false">Those with inpatient beds</button>
+      </div>
+      <div class="cloudwrap">
+        <canvas id="cloud" role="img"
+          aria-label="A block of 8,932 points, one per health facility. Filtering lights only the top three tenths of the block, the 2,685 that hold inpatient beds."></canvas>
+      </div>
+      <p class="cloudnote" id="cloudnote">
+        <b>8,932 facilities.</b> An impressive number, and the reason national
+        summaries sound reassuring. Now filter it.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════ SLIDE 2: ACTION ═════════════════════════════ -->
+<section class="slide" id="sl2" aria-label="Slide 2: Action">
+  <div class="head">
+    <div>
+      <div class="star"><span class="badge">A</span><span class="step">Action, what we did</span></div>
+      <h1>So we asked all 47 counties the <em>same question</em>.</h1>
+      <p class="lede">Not "how many beds does Kenya have", but <strong>"how far can this spread before you
+      run out?"</strong> Then we let the wave move, and watched who fell first.</p>
+    </div>
+    <div class="deck-tag">
+      <b>One question, 47 answers</b>
+      60,814 inpatient places<br>
+      47,564,296 people
+    </div>
+  </div>
+
+  <div class="cols s2">
+    <div class="panel">
+      <h2>How we got there</h2>
+      <div class="beat">
+        <div class="n">1</div>
+        <div class="t"><b>We counted every bed.</b>
+          Inpatient beds and cots in all 8,932 facilities: <i>60,814</i> places for the whole country.</div>
+      </div>
+      <div class="beat">
+        <div class="n">2</div>
+        <div class="t"><b>We counted the people.</b>
+          The 2019 census, county by county: <i>47.56 million</i> Kenyans each county has to cover.</div>
+      </div>
+      <div class="beat">
+        <div class="n">3</div>
+        <div class="t"><b>Then we asked when one runs out of the other.</b>
+          For every county, the share of its people who can fall ill before its beds are gone.</div>
+      </div>
+      <p class="small-print" style="font-size:11px;color:var(--muted);margin-top:12px;line-height:1.5">
+        Kenya has <b style="color:var(--ink-2)">12.8 beds per 10,000 people</b>. The WHO put it at 13.3
+        for 2019, so the register is telling the truth about beds.
+      </p>
+    </div>
+
+    <div class="stack">
+      <div class="tally">
+        <div class="ty"><span class="v" id="t-ar" style="color:var(--ink)">0.0%</span><span class="k">Share of Kenyans infected</span></div>
+        <div class="ty"><span class="v" id="t-cty" style="color:var(--out)">0</span><span class="k">Counties out of beds</span></div>
+        <div class="ty"><span class="v" id="t-pop" style="color:var(--edge)">0.0M</span><span class="k">People living in them</span></div>
+      </div>
+
+      <div class="panel" style="flex:1;display:flex;flex-direction:column;min-height:200px">
+        <h2>Each dot is one county. The wave moves left to right.</h2>
+        <div class="wavewrap">
+          <svg id="wave" role="img"
+            aria-label="Forty-seven counties positioned by how far an outbreak can spread before their beds are exhausted, with a wave front sweeping across them"></svg>
+        </div>
+        <div class="wavectl">
+          <button class="play" id="play">Release the wave</button>
+          <div class="scrub">
+            <label for="s-wave">Drag to move the wave yourself</label>
+            <input type="range" id="s-wave" min="0" max="1000" step="1" value="0"
+                   aria-label="Share of Kenyans infected">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════ SLIDE 3: RESULT ═════════════════════════════ -->
+<section class="slide" id="sl3" aria-label="Slide 3: Result">
+  <div class="head">
+    <div>
+      <div class="star"><span class="badge">R</span><span class="step">Result, and the check that matters</span></div>
+      <h1>The 2017 data <em>already knew</em>.</h1>
+      <p class="lede">Three pictures. Who runs out, how unevenly it is spread, and whether
+      an independent measurement three years later agreed.</p>
+    </div>
+    <div class="deck-tag">
+      <b>Verdict: rejected</b>
+      Not enough, badly spread, too concentrated<br>
+      Every figure regression-tested
+    </div>
+  </div>
+
+  <div class="cols s3">
+    <div class="panel" style="display:flex;flex-direction:column">
+      <h2>Who is on the wrong side of it</h2>
+      <div class="hero"><span class="n" id="w-num">0.0M</span><span class="of">of 47.6M Kenyans</span></div>
+      <div class="figwrap">
+        <svg id="waffle" viewBox="0 0 340 212" role="img"
+          aria-label="A grid of 476 squares, one per hundred thousand Kenyans. 316 of them, two in three, are shaded red for the counties whose beds are exhausted."></svg>
+      </div>
+      <p class="cap">Every square is <b>100,000 people</b>. The red ones live in the
+        <b>31 counties</b> whose beds are gone at a 1 in 20 wave.</p>
+    </div>
+
+    <div class="panel" style="display:flex;flex-direction:column">
+      <h2>Short of beds, and leaning on one building</h2>
+      <div class="figwrap">
+        <svg id="scatter" viewBox="0 0 452 300" role="img"
+          aria-label="Scatter of 47 counties. Horizontal axis is inpatient beds per ten thousand people, vertical axis is the share of a county's beds held in its single largest facility. Eight counties fall in the shaded danger corner, with Kwale furthest into it."></svg>
+      </div>
+      <p class="cap">One circle per county, sized by population.
+        <b style="color:var(--out)">Eight sit in the danger corner</b>: fewer beds than the national
+        average, and over a third of them inside a single building. Kwale is furthest in.</p>
+    </div>
+
+    <div class="stack">
+      <!-- intrinsic height, never flex:1. An inline flex shorthand sets
+           flex-shrink:1 and overrides `.stack > * {flex-shrink:0}`, which lets
+           this panel compress under its own content and overlap the notes
+           below it while the slide still reports zero overflow. -->
+      <div class="panel">
+        <h2>We said this in 2017. COVID-19 measured it in 2020.</h2>
+
+        <div class="pv">
+          <div class="pvh"><b>Total inpatient beds in Kenya</b><span class="gap">5.2% apart</span></div>
+          <div class="pvr"><span class="pvl">Our count, 2017 register</span>
+            <span class="pvb"><i data-w="94.8" style="background:var(--safe)"></i></span><span class="pvv">60,814</span></div>
+          <div class="pvr"><span class="pvl">PLOS One, July 2020</span>
+            <span class="pvb"><i data-w="100" style="background:var(--ink-2)"></i></span><span class="pvv">64,181</span></div>
+        </div>
+
+        <div class="pv">
+          <div class="pvh"><b>Beds per 10,000 people</b><span class="gap">3.9% apart</span></div>
+          <div class="pvr"><span class="pvl">Our count, 2017 register</span>
+            <span class="pvb"><i data-w="96.2" style="background:var(--safe)"></i></span><span class="pvv">12.8</span></div>
+          <div class="pvr"><span class="pvl">WHO, Kenya 2019</span>
+            <span class="pvb"><i data-w="100" style="background:var(--ink-2)"></i></span><span class="pvv">13.3</span></div>
+        </div>
+
+        <div class="pv">
+          <div class="pvh"><b>Counties with no top tier hospital, of 47</b><span class="gap">same fault</span></div>
+          <div class="pvr"><span class="pvl">Ours: no referral hospital</span>
+            <span class="pvb"><i data-w="68.1" style="background:var(--safe)"></i></span><span class="pvv">32</span></div>
+          <div class="pvr"><span class="pvl">COVID: no ICU unit</span>
+            <span class="pvb"><i data-w="53.2" style="background:var(--ink-2)"></i></span><span class="pvv">25</span></div>
+        </div>
+
+        <p class="small-print" style="font-size:11px;color:var(--muted);padding-top:10px;line-height:1.45">
+          Two sources, three years apart, different methods. Nothing was fitted to anything.
+          <b style="color:var(--ink-2)">The agreement is the evidence.</b>
+        </p>
+      </div>
+
+      <p class="callout" style="font-size:11.5px">
+        <b>Kwale is last under every assumption we tested.</b> Change all of them and it is still
+        last. That is the one to act on.
+      </p>
+
+      <p class="live">
+        <b>Argue with the model yourself</b>
+        Every parameter, the county map and the full triage board are live at
+        <code>outbreak-stress-capacity.vercel.app</code>
+      </p>
+
+      <p class="foot">
+        <strong style="color:var(--ink-2)">What this cannot tell you.</strong> It counts beds, not staff, so it
+        reads capacity <em>optimistically</em>. Hospitalisation rates borrowed from much older populations pull the
+        other way. Both are real and they do not cancel.
+        <br>Kenya Master Health Facility List 2017; 2019 Census; Barasa et&nbsp;al., PLOS One 2020; WHO.
+      </p>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<div class="hud">
+  <div class="dots" id="dots" role="tablist" aria-label="Slides"></div>
+  <div class="count"><span id="cur">1</span> / 3</div>
+</div>
+<p class="keyhint"><b>&larr; &rarr;</b> navigate &nbsp;&middot;&nbsp; <b>F</b> fullscreen &nbsp;&middot;&nbsp; <b>R</b> replay</p>
+
+<script>__GSAP__</script>
+<script>__THREE__</script>
+<script>__MOTION__</script>
+<script>
+"use strict";
+const C = __DATA__;
+
+/* ═══════════════ the model, fixed at the notebook's baseline ═════════════
+   The deck states one scenario rather than exposing the parameters. The
+   interactive version is where they can be argued with. */
+const WAVE = 84, PEAK = 2.5, UPLIFT = 1.20, OCC = 0.65, LOS = 8, HOSP = 0.05;
+const NAT_POP = C.reduce((s, d) => s + d.pop, 0);
+const OUTC = '#d03b3b';
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+C.forEach(d => { d.ar = d.beds * (1 - OCC) * UPLIFT * WAVE / (d.pop * HOSP * LOS * PEAK); });
+const RANKED = [...C].sort((a, b) => a.ar - b.ar);
+const PLAN = 0.05;                       /* the 1 in 20 wave the deck narrates */
+
+/* ═══════════════ deck navigation ════════════════════════════════════════ */
+const slides = [...document.querySelectorAll('.slide')];
+const rail = [...document.querySelectorAll('.rail i')];
+const dotsEl = document.getElementById('dots');
+let idx = 0; const seen = new Set();
+
+dotsEl.innerHTML = slides.map((s, i) =>
+  `<button role="tab" aria-current="${i === 0}" aria-label="Go to slide ${i + 1}"></button>`).join('');
+const dotBtns = [...dotsEl.children];
+dotBtns.forEach((b, i) => b.onclick = () => go(i));
+
+function go(n){
+  n = Math.max(0, Math.min(slides.length - 1, n));
+  slides[idx].classList.remove('on');
+  idx = n;
+  slides[idx].classList.add('on');
+  rail.forEach((r, i) => { r.className = i < idx ? 'done' : i === idx ? 'now' : ''; });
+  dotBtns.forEach((b, i) => b.setAttribute('aria-current', i === idx));
+  document.getElementById('cur').textContent = idx + 1;
+  /* deep link, so a presenter can bookmark or reopen straight onto a slide */
+  if (location.hash !== '#' + (idx + 1)) history.replaceState(null, '', '#' + (idx + 1));
+  enter(idx);
+}
+function typingIn(t){
+  return t && (t.isContentEditable || t.tagName === 'TEXTAREA' ||
+    (t.tagName === 'INPUT' && !/^(range|checkbox|radio|button)$/.test(t.type)));
+}
+addEventListener('keydown', e => {
+  if (typingIn(e.target)) return;
+  if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); go(idx + 1); }
+  else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); go(idx - 1); }
+  else if (e.key === 'Home') go(0);
+  else if (e.key === 'End') go(slides.length - 1);
+  else if (/^[123]$/.test(e.key)) go(+e.key - 1);
+  else if (e.key === 'f' || e.key === 'F'){
+    e.preventDefault();
+    document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+  }
+});
+
+function enter(i){
+  if (i === 1) sizeWave();
+  if (seen.has(i)) return;
+  seen.add(i);
+  if (i === 0) slide1Intro();
+  if (i === 1) setTimeout(playWave, 420);
+  if (i === 2) slide3Intro();
+}
+
+/* ═══════════════ never strand content mid-tween ═════════════════════════
+   requestAnimationFrame is throttled to nothing whenever the window is
+   hidden, so a `from` tween started just before an alt-tab freezes part-way
+   and leaves its targets at opacity 0 for the rest of the talk. Every intro
+   timeline gets a wall-clock guard that snaps it to its end state. */
+function guard(tl){
+  if (!tl) return tl;
+  setTimeout(() => { if (tl.progress() < 1) tl.progress(1); }, (tl.duration() + .8) * 1000);
+  return tl;
+}
+/* Last resort, independent of the animation layer entirely. */
+setTimeout(() => document.querySelectorAll('.fade').forEach(e => {
+  if (parseFloat(getComputedStyle(e).opacity) < 1) e.style.opacity = 1;
+}), 5000);
+
+/* ═══════════════ counters ═══════════════════════════════════════════════ */
+function countUp(el, delay){
+  const target = parseFloat(el.dataset.count);
+  const dp = +(el.dataset.dp || 0), suffix = el.dataset.suffix || '';
+  const fmt = v => v.toLocaleString(undefined, {minimumFractionDigits:dp, maximumFractionDigits:dp}) + suffix;
+  if (REDUCED || !window.gsap){ el.textContent = fmt(target); return; }
+  const o = {v:0};
+  const tw = gsap.to(o, {v:target, duration:1.5, delay, ease:'expo.out',
+    onUpdate(){ el.textContent = fmt(o.v); }});
+  /* The worst failure this deck could have is four headline figures reading
+     zero because the ticker was throttled. Land on the real number always. */
+  setTimeout(() => { if (tw.progress() < 1){ tw.kill(); el.textContent = fmt(target); } },
+    (delay + 1.5 + .8) * 1000);
+}
+
+function slide1Intro(){
+  /* fadeIn, not fadeInUp: Animate.css translates 100% of the element's own
+     height, and on a headline this size that means it sits on top of the
+     lede for the length of the transition. Also strip the classes when it
+     ends, because animation-fill-mode:both otherwise holds the *first*
+     keyframe (opacity 0) if the animation never gets to run. */
+  const h1 = document.getElementById('sl1h1');
+  if (!REDUCED){
+    h1.classList.add('animate__animated', 'animate__fadeIn');
+    const settle = () => h1.classList.remove('animate__animated', 'animate__fadeIn');
+    h1.addEventListener('animationend', settle, {once:true});
+    setTimeout(settle, 2000);
+  }
+  const els = document.querySelectorAll('#sl1 [data-a]');
+  if (REDUCED || !window.gsap){ els.forEach(e => e.style.opacity = 1); }
+  else guard(gsap.timeline().to(els,
+    {opacity:1, y:0, duration:.62, stagger:.13, ease:'power2.out', startAt:{y:14}}));
+  document.querySelectorAll('#sl1 [data-count]').forEach(el => countUp(el, .45));
+  startCloud();
+}
+
+/* ═══════════════ slide 1: the facility block (Three.js) ═════════════════
+   8,932 points on a regular lattice, ordered top row first, so that a count
+   fraction IS a height fraction. An earlier version scattered the 2,685
+   bedded facilities randomly through a sphere; it looked better and told the
+   audience nothing, because "30% of the points, everywhere" is not a shape
+   anyone can read. Contiguity is the whole point of this visual. */
+const FAC = {total:8932, bedded:2685};
+const CAM_Z = 12.4, SPAN_Y = 8.4;
+let renderer, scene, camera, ptsBedded, ptsRest, cloudRAF = null, cloudReady = false;
+
+function buildLattice(){
+  const cv = document.getElementById('cloud');
+  const box = cv.getBoundingClientRect();
+  const aspect = Math.max(.6, box.width / Math.max(1, box.height));
+  const rows = Math.max(12, Math.round(Math.sqrt(FAC.total / aspect)));
+  const cols = Math.ceil(FAC.total / rows);
+  const spanX = SPAN_Y * aspect;
+  const cw = spanX / cols, rh = SPAN_Y / rows;
+  /* A perfectly regular lattice beats against the pixel grid and renders as
+     woven fabric rather than as points. Jitter breaks it, but the jitter has
+     to actually be uncorrelated: `i * k % n` is an arithmetic progression and
+     just trades the weave for diagonal banding. This is an avalanche hash, so
+     neighbouring indices land nowhere near each other.
+     Y is jittered by well under half a row, so the boundary between the
+     bedded band and the rest stays a readable horizontal edge. */
+  const hash = i => {
+    let x = Math.imul(i + 0x9e3779b9, 374761393);
+    x = Math.imul(x ^ (x >>> 13), 1274126177);
+    return ((x ^ (x >>> 16)) >>> 0) / 4294967296 - .5;
+  };
+  const A = [], B = [];
+  for (let i = 0; i < FAC.total; i++){
+    const r = Math.floor(i / cols), c = i % cols;
+    const p = [
+      (c / (cols - 1) - .5) * spanX + hash(i * 3 + 1) * cw * .85,
+      (.5 - r / (rows - 1)) * SPAN_Y + hash(i * 3 + 2) * rh * .55,
+      hash(i * 3 + 3) * 1.1
+    ];
+    (i < FAC.bedded ? A : B).push(p);                 /* the top band holds the beds */
+  }
+  return {A, B, gap:Math.min(cw, rh)};
+}
+
+function makeCloud(){
+  const cv = document.getElementById('cloud');
+  const box = cv.getBoundingClientRect();
+  const W = Math.max(2, box.width), H = Math.max(2, box.height);
+
+  renderer = new THREE.WebGLRenderer({canvas:cv, alpha:true, antialias:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+  renderer.setSize(W, H, false);
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(42, W / H, 0.1, 100);
+  camera.position.set(0, 0, CAM_Z);
+
+  const {A, B, gap} = buildLattice();
+  const mk = (arr, colour, size) => {
+    const g = new THREE.BufferGeometry();
+    const f = new Float32Array(arr.length * 3);
+    arr.forEach((p, i) => { f[i*3] = p[0]; f[i*3+1] = p[1]; f[i*3+2] = p[2]; });
+    g.setAttribute('position', new THREE.BufferAttribute(f, 3));
+    const m = new THREE.PointsMaterial({color:colour, size, transparent:true, opacity:.9,
+      sizeAttenuation:true, depthWrite:false});
+    const o = new THREE.Points(g, m); scene.add(o); return o;
+  };
+  const s = Math.max(.045, gap * .62);
+  ptsBedded = mk(A, 0xc3c2b7, s);
+  ptsRest   = mk(B, 0xc3c2b7, s);
+  cloudReady = true;
+}
+
+function renderCloud(){
+  if (!cloudReady) return;
+  const t = performance.now() * 0.00016;
+  /* a slow drift, not a spin and not a sway. Anything larger skews the block
+     into a parallelogram, and the audience is here to compare the height of
+     the lit band against the whole, which a tilted block makes harder. */
+  scene.rotation.y = Math.sin(t) * 0.10;
+  scene.rotation.x = Math.sin(t * 0.63) * 0.025;
+  renderer.render(scene, camera);
+  cloudRAF = requestAnimationFrame(renderCloud);
+}
+function startCloud(){
+  if (!window.THREE) return;                       /* degrade quietly, never crash */
+  try { if (!cloudReady) makeCloud(); } catch(e){ return; }
+  if (cloudRAF === null) renderCloud();
+  if (REDUCED || !window.gsap) return;
+  const tl = gsap.timeline();
+  tl.from([ptsBedded.material, ptsRest.material], {opacity:0, duration:1.4, ease:'power2.out'}, 0)
+    .from(camera.position, {z:CAM_Z + 20, duration:2.0, ease:'power3.out'}, 0);
+  /* `from` applies its start state immediately but only advances on a ticker
+     frame. In a hidden tab that never comes, which would leave the hero
+     visual parked at a far camera and invisible points. Restore directly. */
+  setTimeout(() => {
+    if (tl.progress() < 1){
+      tl.kill();
+      ptsBedded.material.opacity = ptsRest.material.opacity = .9;
+      camera.position.z = CAM_Z;
+    }
+  }, 3000);
+}
+function sizeCloud(){
+  if (!cloudReady) return;
+  const box = document.getElementById('cloud').getBoundingClientRect();
+  const W = Math.max(2, box.width), H = Math.max(2, box.height);
+  camera.aspect = W / H; camera.updateProjectionMatrix();
+  renderer.setSize(W, H, false);
+  /* the lattice is laid out to the panel's aspect, so it has to be rebuilt */
+  const {A, B, gap} = buildLattice();
+  const put = (obj, arr) => {
+    const f = new Float32Array(arr.length * 3);
+    arr.forEach((p, i) => { f[i*3] = p[0]; f[i*3+1] = p[1]; f[i*3+2] = p[2]; });
+    obj.geometry.setAttribute('position', new THREE.BufferAttribute(f, 3));
+    obj.material.size = Math.max(.045, gap * .62);
+  };
+  put(ptsBedded, A); put(ptsRest, B);
+}
+
+const CNOTE = {
+  all:  `<b>8,932 facilities.</b> An impressive number, and the reason national summaries sound reassuring. Now filter it.`,
+  beds: `<b>Only 2,685 hold a single inpatient bed,</b> the lit band at the top. Seven in ten are dispensaries and clinics. They matter enormously for primary care, and not at all when someone cannot breathe.`
+};
+function setCloud(mode){
+  document.getElementById('f-all').setAttribute('aria-pressed', mode === 'all');
+  document.getElementById('f-beds').setAttribute('aria-pressed', mode === 'beds');
+  const note = document.getElementById('cloudnote');
+  note.innerHTML = CNOTE[mode];
+  note.style.borderColor = mode === 'beds' ? '#3987e5' : 'var(--grid)';
+  /* Motion One drives the note: a spring where GSAP does the linear work */
+  if (!REDUCED && window.Motion){
+    Motion.animate(note, {opacity:[0, 1], transform:['translateX(-8px)', 'translateX(0)']},
+      {duration:.5, easing:Motion.spring({stiffness:180, damping:20})});
+  }
+  if (!cloudReady) return;
+  const set = (m, o, col) => { m.opacity = o; if (col !== undefined) m.color.setHex(col); };
+  if (REDUCED || !window.gsap){
+    mode === 'beds' ? (set(ptsBedded.material, 1, 0x3987e5), set(ptsRest.material, .15))
+                    : (set(ptsBedded.material, .9, 0xc3c2b7), set(ptsRest.material, .9));
+    return;
+  }
+  const d = .85;
+  if (mode === 'beds'){
+    gsap.to(ptsBedded.material, {opacity:1, duration:d, ease:'power2.out'});
+    gsap.to(ptsBedded.material.color, {r:.224, g:.529, b:.898, duration:d});   /* #3987e5 */
+    gsap.to(ptsRest.material, {opacity:.15, duration:d, ease:'power2.out'});
+  } else {
+    gsap.to([ptsBedded.material, ptsRest.material], {opacity:.9, duration:d, ease:'power2.out'});
+    gsap.to(ptsBedded.material.color, {r:.765, g:.761, b:.718, duration:d});   /* #c3c2b7 */
+  }
+  /* the filter is the single most important beat on this slide, so it must
+     land even with no ticker */
+  setTimeout(() => {
+    if (window.gsap && gsap.ticker.frame < 2){
+      mode === 'beds' ? (set(ptsBedded.material, 1, 0x3987e5), set(ptsRest.material, .15))
+                      : (set(ptsBedded.material, .9, 0xc3c2b7), set(ptsRest.material, .9));
+    }
+  }, 1200);
+}
+document.getElementById('f-all').onclick  = () => setCloud('all');
+document.getElementById('f-beds').onclick = () => setCloud('beds');
+
+/* ═══════════════ slide 2: the wave ══════════════════════════════════════
+   Hand-rolled scale and axis. This was the only thing left needing D3, and a
+   linear map plus six ticks is not worth 280 KB in a file people email. */
+const NS = 'http://www.w3.org/2000/svg';
+const waveSvg = document.getElementById('wave');
+const AR_MAX = 0.10;                                   /* the track runs 0 to 10% */
+let wavePts = [], waveGeom = null, waveTween = null;
+
+const el = (tag, attrs) => {
+  const n = document.createElementNS(NS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  return n;
+};
+
+function sizeWave(){
+  const box = waveSvg.parentElement.getBoundingClientRect();
+  const W = Math.max(260, box.width), H = Math.max(150, box.height);
+  waveSvg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  const M = {t:14, r:16, b:28, l:16};
+  const xOf = v => M.l + (v / (AR_MAX * 100)) * (W - M.l - M.r);
+  waveGeom = {W, H, M, xOf};
+
+  waveSvg.textContent = '';
+
+  const defs = el('defs');
+  const g = el('linearGradient', {id:'wg', x1:0, x2:1});
+  [['0%', .04], ['70%', .16], ['100%', .42]].forEach(([o, op]) =>
+    g.appendChild(el('stop', {offset:o, 'stop-color':OUTC, 'stop-opacity':op})));
+  defs.appendChild(g); waveSvg.appendChild(defs);
+
+  waveSvg.appendChild(el('rect', {class:'flood', fill:'url(#wg)', x:M.l, y:M.t, width:0, height:H - M.b - M.t}));
+
+  /* axis: gridlines, ticks, baseline */
+  const ax = el('g');
+  for (let v = 0; v <= AR_MAX * 100; v += 2){
+    ax.appendChild(el('line', {x1:xOf(v), x2:xOf(v), y1:M.t, y2:H - M.b, stroke:'#2c2c2a'}));
+    const t = el('text', {x:xOf(v), y:H - M.b + 15, fill:'#898781', 'font-size':'10.5px',
+      'font-family':'system-ui,sans-serif', 'text-anchor':v === 0 ? 'start' : v === AR_MAX * 100 ? 'end' : 'middle'});
+    t.textContent = v + '%';
+    ax.appendChild(t);
+  }
+  ax.appendChild(el('line', {x1:M.l, x2:W - M.r, y1:H - M.b, y2:H - M.b, stroke:'#383835'}));
+  waveSvg.appendChild(ax);
+
+  /* stack counties vertically where they share an x bucket */
+  const baseY = H - M.b - 9, step = 12, buckets = new Map();
+  wavePts = RANKED.map(r => {
+    const x = xOf(Math.min(AR_MAX * 100 - .15, r.ar * 100));
+    const k = Math.round(x / 10);
+    const n = buckets.get(k) || 0; buckets.set(k, n + 1);
+    return {...r, x, y:Math.max(M.t + 6, baseY - n * step)};
+  });
+  const pts = el('g', {class:'pts'});
+  wavePts.forEach(d => {
+    const c = el('circle', {cx:d.x, cy:d.y, r:5, stroke:'#1a1a19', 'stroke-width':1.5});
+    const ttl = el('title');
+    ttl.textContent = `${d.county}: out of beds once ${(d.ar * 100).toFixed(1)}% of its people are infected`;
+    c.appendChild(ttl); c.__d = d; pts.appendChild(c);
+  });
+  waveSvg.appendChild(pts);
+
+  /* the wave the story is about, marked so the animation stops somewhere
+     meaningful rather than just running out of track */
+  waveSvg.appendChild(el('line', {class:'planline', x1:xOf(PLAN * 100), x2:xOf(PLAN * 100),
+    y1:M.t - 3, y2:H - M.b, stroke:'#c3c2b7', 'stroke-width':1, 'stroke-dasharray':'3 3', opacity:.55}));
+  const pl = el('text', {class:'planlbl', x:xOf(PLAN * 100) - 7, y:M.t + 5, fill:'#c3c2b7',
+    'font-size':'10px', 'font-family':'system-ui,sans-serif', 'text-anchor':'end'});
+  pl.textContent = 'a 1 in 20 wave';
+  waveSvg.appendChild(pl);
+
+  waveSvg.appendChild(el('line', {class:'front', y1:M.t - 3, y2:H - M.b, stroke:'#fff', 'stroke-width':2, opacity:0}));
+  const fl = el('text', {class:'frontl', y:M.t + 5, fill:'#fff', 'font-size':'10.5px',
+    'font-family':'system-ui,sans-serif', 'font-weight':700, opacity:0});
+  waveSvg.appendChild(fl);
+
+  paintWave(+document.getElementById('s-wave').value / 1000 * AR_MAX);
+}
+
+function paintWave(ar){
+  if (!waveGeom) return;
+  const {W, M, xOf} = waveGeom;
+  const fx = xOf(ar * 100);
+  waveSvg.querySelector('.flood').setAttribute('width', Math.max(0, fx - M.l));
+  const front = waveSvg.querySelector('.front');
+  front.setAttribute('x1', fx); front.setAttribute('x2', fx);
+  front.setAttribute('opacity', ar > 0 ? .9 : 0);
+  const fl = waveSvg.querySelector('.frontl');
+  fl.setAttribute('x', Math.min(fx + 7, W - 74));
+  fl.setAttribute('opacity', ar > 0 ? .9 : 0);
+  fl.textContent = `${(ar * 100).toFixed(1)}% infected`;
+
+  waveSvg.querySelectorAll('.pts circle').forEach(c => {
+    const fallen = c.__d.ar <= ar;
+    c.setAttribute('fill', fallen ? OUTC : '#55554f');
+    c.setAttribute('r', fallen ? 6.5 : 5);
+    c.setAttribute('opacity', fallen ? 1 : .75);
+  });
+
+  const fallen = C.filter(d => d.ar <= ar);
+  document.getElementById('t-ar').textContent = (ar * 100).toFixed(1) + '%';
+  document.getElementById('t-cty').textContent = fallen.length;
+  document.getElementById('t-pop').textContent =
+    (fallen.reduce((s, d) => s + d.pop, 0) / 1e6).toFixed(1) + 'M';
+}
+
+const scrub = document.getElementById('s-wave');
+scrub.addEventListener('input', () => {
+  if (waveTween) waveTween.kill();
+  paintWave(+scrub.value / 1000 * AR_MAX);
+});
+
+function playWave(){
+  if (!waveGeom) return;
+  if (waveTween) waveTween.kill();
+  const o = {v:0};
+  scrub.value = 0; paintWave(0);
+  /* Stop at the 1 in 20 wave the story is built on, so the tally lands on the
+     same 31 counties slide 3 reports. The scrubber goes further if asked. */
+  const land = () => { scrub.value = PLAN / AR_MAX * 1000; paintWave(PLAN); };
+  if (REDUCED || !window.gsap){ land(); return; }
+  waveTween = gsap.to(o, {
+    v:PLAN, duration:5.2, ease:'power1.inOut',
+    onUpdate(){ scrub.value = o.v / AR_MAX * 1000; paintWave(o.v); }
+  });
+  /* If the ticker was throttled the slide would sit at "0 counties" and say
+     nothing at all. Land on the finding either way, and paint it directly
+     rather than through the tween that just failed: a fallback must not
+     depend on the thing it is covering for. */
+  setTimeout(() => {
+    if (waveTween && waveTween.progress() < 1){ waveTween.kill(); land(); }
+  }, 6400);
+}
+document.getElementById('play').onclick = playWave;
+
+/* ═══════════════ slide 3, picture one: the waffle ═══════════════════════
+   476 squares, one per 100,000 Kenyans. 316 of them are red. Nobody has to
+   do arithmetic to see two thirds; the shape does it. Both charts use a
+   fixed viewBox and let the browser scale them, which removes every resize
+   path and the bugs that live in them. */
+const WAFFLE_COLS = 28, WAFFLE_ROWS = 17, WAFFLE_N = 476;
+const POP_CELL = 1e5;
+const brokeCounties = C.filter(d => d.ar < PLAN);
+const brokePop = brokeCounties.reduce((s, d) => s + d.pop, 0);
+const RED_CELLS = Math.round(brokePop / POP_CELL);
+
+function buildWaffle(){
+  const svg = document.getElementById('waffle');
+  svg.textContent = '';
+  const cell = 10, gap = 2;
+  for (let i = 0; i < WAFFLE_N; i++){
+    const r = Math.floor(i / WAFFLE_COLS), c = i % WAFFLE_COLS;
+    svg.appendChild(el('rect', {
+      class: i < RED_CELLS ? 'wc red' : 'wc',
+      x:c * (cell + gap), y:r * (cell + gap), width:cell, height:cell, rx:1.5,
+      fill:i < RED_CELLS ? OUTC : '#3a3a38', opacity:1
+    }));
+  }
+}
+
+/* ═══════════════ slide 3, picture two: the danger corner ════════════════
+   Two failures on one pair of axes. Short of beds (left) is survivable if
+   the beds you have are spread about; concentration (high) is survivable if
+   you have plenty. The counties in the top left corner have neither, and
+   that intersection is invisible in any single-variable ranking. */
+const SC = {W:452, H:300, l:46, r:16, t:16, b:38, xMax:25, yMax:60};
+const NAT_RATE = 12.8, THIRD = 100 / 3;
+const scX = v => SC.l + (v / SC.xMax) * (SC.W - SC.l - SC.r);
+const scY = v => (SC.H - SC.b) - (v / SC.yMax) * (SC.H - SC.b - SC.t);
+
+function buildScatter(){
+  const svg = document.getElementById('scatter');
+  svg.textContent = '';
+  const txt = (x, y, s, o = {}) => {
+    const t = el('text', Object.assign({x, y, fill:'#898781', 'font-size':'10px',
+      'font-family':'system-ui,sans-serif'}, o));
+    t.textContent = s; return t;
+  };
+
+  /* the danger corner: below the national bed rate AND over a third in one
+     building. Shaded, because a quadrant you have to infer is a quadrant
+     nobody sees. */
+  svg.appendChild(el('rect', {x:SC.l, y:SC.t, width:scX(NAT_RATE) - SC.l,
+    height:scY(THIRD) - SC.t, fill:OUTC, opacity:.10}));
+
+  for (let v = 0; v <= SC.xMax; v += 5){
+    svg.appendChild(el('line', {x1:scX(v), x2:scX(v), y1:SC.t, y2:SC.H - SC.b, stroke:'#2c2c2a'}));
+    svg.appendChild(txt(scX(v), SC.H - SC.b + 15, v, {'text-anchor':'middle'}));
+  }
+  for (let v = 0; v <= SC.yMax; v += 20){
+    svg.appendChild(el('line', {x1:SC.l, x2:SC.W - SC.r, y1:scY(v), y2:scY(v), stroke:'#2c2c2a'}));
+    svg.appendChild(txt(SC.l - 7, scY(v) + 3.5, v + '%', {'text-anchor':'end'}));
+  }
+  svg.appendChild(txt(SC.W - SC.r, SC.H - 6, 'inpatient beds per 10,000 people',
+    {'text-anchor':'end', 'font-size':'10.5px'}));
+  svg.appendChild(txt(SC.l - 7, SC.t - 5, 'share of beds in one building',
+    {'text-anchor':'start', 'font-size':'10.5px', x:SC.l}));
+
+  /* reference lines, each labelled: an unlabelled threshold is decoration */
+  svg.appendChild(el('line', {x1:scX(NAT_RATE), x2:scX(NAT_RATE), y1:SC.t, y2:SC.H - SC.b,
+    stroke:'#c3c2b7', 'stroke-width':1, 'stroke-dasharray':'3 3', opacity:.6}));
+  svg.appendChild(txt(scX(NAT_RATE) + 5, SC.H - SC.b - 6, 'national 12.8', {fill:'#c3c2b7'}));
+  svg.appendChild(el('line', {x1:SC.l, x2:SC.W - SC.r, y1:scY(THIRD), y2:scY(THIRD),
+    stroke:'#c3c2b7', 'stroke-width':1, 'stroke-dasharray':'3 3', opacity:.6}));
+  svg.appendChild(txt(SC.W - SC.r - 2, scY(THIRD) - 6, 'a third in one building',
+    {'text-anchor':'end', fill:'#c3c2b7'}));
+
+  const maxPop = Math.max(...C.map(d => d.pop));
+  const g = el('g', {class:'dots'});
+  [...C].sort((a, b) => b.pop - a.pop).forEach(d => {
+    const danger = d.beds_per_10k < NAT_RATE && d.largest_share * 100 > THIRD;
+    const c = el('circle', {
+      cx:scX(Math.min(SC.xMax, d.beds_per_10k)), cy:scY(Math.min(SC.yMax, d.largest_share * 100)),
+      r:0, fill:danger ? OUTC : '#6f6f68', opacity:danger ? .92 : .55,
+      stroke:'#1a1a19', 'stroke-width':1
+    });
+    c.__r = 4 + Math.sqrt(d.pop / maxPop) * 12;
+    const t = el('title'); t.textContent =
+      `${d.county}: ${d.beds_per_10k.toFixed(1)} beds per 10,000, ${(d.largest_share * 100).toFixed(0)}% in one facility`;
+    c.appendChild(t); g.appendChild(c);
+  });
+  svg.appendChild(g);
+
+  /* three labels only. Kwale because it is the recommendation, and one at
+     each opposite extreme so the corner reads as a corner. */
+  const lab = (name, dx, dy, anchor) => {
+    const d = C.find(x => x.county === name);
+    if (!d) return;
+    const t = txt(scX(d.beds_per_10k) + dx, scY(d.largest_share * 100) + dy, name,
+      {'text-anchor':anchor, fill:'#ffffff', 'font-size':'10.5px', 'font-weight':700, class:'slab'});
+    svg.appendChild(t);
+  };
+  lab('Kwale', 11, 4, 'start');
+  lab('Isiolo', -10, 4, 'end');
+  lab('Nyeri', -10, 4, 'end');
+}
+
+function slide3Intro(){
+  buildWaffle(); buildScatter();
+  const bars = [...document.querySelectorAll('#sl3 .pvb i')];
+  const cells = [...document.querySelectorAll('#waffle .wc')];
+  const dots = [...document.querySelectorAll('#scatter .dots circle')];
+  const num = document.getElementById('w-num');
+  const land = () => {
+    bars.forEach(b => b.style.width = b.dataset.w + '%');
+    cells.forEach(c => c.setAttribute('opacity', 1));
+    dots.forEach(c => c.setAttribute('r', c.__r));
+    document.querySelectorAll('#scatter .slab').forEach(t => t.setAttribute('opacity', 1));
+    num.textContent = (brokePop / 1e6).toFixed(1) + 'M';
+  };
+  if (REDUCED || !window.gsap){ land(); return; }
+
+  cells.forEach(c => c.setAttribute('opacity', 0));
+  document.querySelectorAll('#scatter .slab').forEach(t => t.setAttribute('opacity', 0));
+
+  const o = {v:0};
+  const tl = gsap.timeline();
+  tl.to(cells, {attr:{opacity:1}, duration:.5, stagger:{each:.0035, from:'start'}, ease:'none'}, 0)
+    .to(o, {v:brokePop, duration:1.7, ease:'power2.out',
+      onUpdate(){ num.textContent = (o.v / 1e6).toFixed(1) + 'M'; }}, 0)
+    .to(dots, {attr:{r:(i, t) => t.__r}, duration:.7, stagger:.02, ease:'back.out(1.7)'}, 1.0)
+    .to('#scatter .slab', {attr:{opacity:1}, duration:.4}, 2.1)
+    .to(bars, {width:(i, t) => t.dataset.w + '%', duration:.8, stagger:.08, ease:'power2.out'}, 1.6);
+  guard(tl);
+  /* the ticker may never run at all; the slide still has to be readable */
+  setTimeout(() => { if (tl.progress() < 1){ tl.kill(); land(); } }, 4200);
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'r' && idx === 2 && !typingIn(e.target)) slide3Intro();
+});
+
+/* ═══════════════ boot ═══════════════════════════════════════════════════ */
+let rt;
+addEventListener('resize', () => {
+  clearTimeout(rt);
+  rt = setTimeout(() => { sizeCloud(); if (idx === 1) sizeWave(); }, 160);
+});
+rail[0].className = 'now';
+
+/* Boot must not be gated behind requestAnimationFrame. rAF does not fire at
+   all while a tab is hidden, and a deck is very often opened into a
+   background tab (double-click the file, then go back to setting up). That
+   left slide 1 uninitialised: no counters, no block. Whichever of these two
+   lands first wins; the flag makes the second a no-op. */
+let booted = false;
+function boot(){
+  if (booted) return;
+  booted = true;
+  const n = parseInt(location.hash.slice(1), 10);
+  if (n >= 1 && n <= slides.length) go(n - 1); else enter(0);
+}
+requestAnimationFrame(boot);
+setTimeout(boot, 120);
+</script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-# Kenya outbreak capacity — county triage
+# How prepared is Kenya for a disease outbreak?
 
 An interactive map that triages Kenya's 47 counties by the cumulative attack rate
 at which their surge inpatient capacity is exhausted. Move the scenario controls
@@ -7,24 +7,55 @@ and the counties re-triage; the hypothesis is re-tested on every change.
 Built from the Kenya Master Health Facility List (August 2017, n=8,932) and the
 2019 Kenya Population and Housing Census.
 
-## Run it
+## The presentation deck
+
+`presentation/covid-capacity-deck.html` is a three-slide data story built round
+COVID-19 as the case study, structured on **STAR** (Situation & Task, Action,
+Result). It is a **single self-contained file**: GSAP, Three.js, Motion One, Animate.css and the
+county table are all inlined, so it opens from a USB stick with no server and no
+network. Double-click it, press **F**, and present.
+
+```
+→ / space   next        ← back        1 / 2 / 3   jump to slide       F  fullscreen
+```
+
+The deck is deliberately **not** the model. It states one scenario and tells the
+story; `index.html` is where the parameters can be argued with. Each slide carries
+one interaction: the facility block on slide 1 (Three.js), the wave sweep on slide 2
+(GSAP, replay and scrub), and a replayable build of three charts on slide 3.
+The deck carries no map, so it needs no boundary geometry and no D3.
+`presentation/TALKING-POINTS.md` scripts six presenters, two per slide, with handoff
+cues, a Q&A table and a timing card.
+
+Animation is layered so that **no figure ever depends on an animation completing**:
+`requestAnimationFrame` does not fire at all in a hidden tab, so every reveal,
+counter and the wave carry a wall-clock fallback that writes the final state
+directly. Open the deck in a background tab and it still reads correctly.
+
+Rebuild after editing the template or the analysis:
+
+```bash
+python3 presentation/build_deck.py
+```
+
+## Run the interactive app
 
 ```bash
 python3 -m http.server 8000     # then open http://localhost:8000
 ```
 
-Or just double-click `index.html` — the data, the map geometry and D3 are all
+Or just double-click `index.html`, because the data, the map geometry and D3 are all
 bundled, so it works offline from `file://`. The only network request is for
 webfonts, and it falls back to system sans if those don't load.
 
 ## Deploy
 
-**GitHub Pages** — push to `main`; `.github/workflows/pages.yml` publishes the
+**GitHub Pages**, push to `main`; `.github/workflows/pages.yml` publishes the
 repo root. Enable Pages under Settings → Pages → Source: GitHub Actions.
 
-**Netlify / Vercel / Cloudflare Pages** — no build command, publish directory `.`.
+**Netlify / Vercel / Cloudflare Pages**, no build command, publish directory `.`.
 
-**Any static host** — upload `index.html` and `vendor/`. Nothing else is needed
+**Any static host**, upload `index.html` and `vendor/`. Nothing else is needed
 at runtime; `data/`, `src/` and `test/` are build-time only.
 
 ## Rebuild after changing the analysis
@@ -39,7 +70,7 @@ node test/verify.js             # confirm the app still matches the notebook
 ```
 
 `src/prep_data.py` expects `county_capacity.csv` and `kenya_counties.geojson` in
-the working directory — run it from `data/`, or edit the paths at the top.
+the working directory, so run it from `data/`, or edit the paths at the top.
 
 ## The model
 
@@ -64,8 +95,8 @@ hospitalisation rate and length of stay are pathogen properties the user sets.
 
 ## What the tool cannot tell you
 
-The facility list carries no ICU, oxygen, isolation or laboratory information —
-the `Service_names` column is empty in all 8,932 rows — and no staffing data.
+The facility list carries no ICU, oxygen, isolation or laboratory information,
+because the `Service_names` column is empty in all 8,932 rows, and no staffing data.
 Kenya's binding constraints during COVID were oxygen and critical-care staffing
 rather than general beds, so **every figure here is an optimistic bound**.
 
@@ -79,14 +110,25 @@ Two further caveats worth stating alongside any result:
   referral facility, so severe cases cross boundaries in reality.
 
 This is a static peak calculation, not an epidemic model. There is no
-transmission dynamic and no depletion of susceptibles — the wave shape is
+transmission dynamic and no depletion of susceptibles, so the wave shape is
 imposed by two constants rather than emerging from an SEIR process.
 
 ## Layout
 
 ```
 index.html                  built artifact - do not edit by hand
+presentation/
+  covid-capacity-deck.html  built artifact - the 3-slide deck, fully self-contained
+  deck.template.html        the deck source, with __GSAP__/__THREE__/__DATA__ placeholders
+  build_deck.py             inlines the vendor libs + data into one file
+  TALKING-POINTS.md         script for six presenters, two per slide
+  TALKING-POINTS.pdf        the same, typeset for paper
+  build_talking_points_pdf.py  renders that script to PDF
 vendor/d3.min.js            D3 v7.8.5, bundled for offline use
+vendor/gsap.min.js          GSAP v3.12.5, the deck's animation engine
+vendor/three.min.js         Three.js r150, the slide 1 facility cloud
+vendor/motion.min.js        Motion One v10.18, spring transitions
+vendor/animate.min.css      Animate.css v4.1.1, entrance utilities
 data/web_data.json          embedded payload: geometry + county metrics
 data/county_capacity.csv    county table from the analysis notebook
 data/kenya_counties.geojson source boundaries
@@ -99,6 +141,6 @@ test/verify.js              regression test against the notebook's numbers
 ## Sources
 
 County boundaries are a community GitHub dataset, adequate for analysis but not
-authoritative. For publication, substitute official boundaries — OCHA's Kenya
-admin boundaries on HDX, or the IEBC/KNBS county shapefiles — and re-run
+authoritative. For publication, substitute official boundaries, either OCHA's Kenya
+admin boundaries on HDX, or the IEBC/KNBS county shapefiles, then re-run
 `test/verify.js` to confirm nothing shifted.
