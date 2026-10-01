@@ -1,9 +1,9 @@
 # How prepared is Kenya for a disease outbreak?
 
+![How prepared is Kenya for a disease outbreak: the question, the method, and the answer. 31 of 47 counties run out of beds at a 1 in 20 wave.](assets/hero.png)
+
 [![CI](https://github.com/ChristopherKiokoStrathmore/SLIDES/actions/workflows/ci.yml/badge.svg)](https://github.com/ChristopherKiokoStrathmore/SLIDES/actions/workflows/ci.yml)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-
-![County triage map](docs/hero-county-triage.png)
 
 Live map: [https://slides-pink-ten.vercel.app](https://slides-pink-ten.vercel.app)
 
@@ -13,6 +13,14 @@ and the counties re-triage; the hypothesis is re-tested on every change.
 
 Built from the Kenya Master Health Facility List (August 2017, n=8,932) and the
 2019 Kenya Population and Housing Census.
+
+## Preview
+
+The deck is three slides in one file. This flips through the rendered pages.
+Slide 2 is held on the 1 in 20 wave the talk is built around: 31 counties out of
+beds, 31.6 million people.
+
+![Three rendered slides: situation and task, the wave, and the result.](assets/demo.gif)
 
 ## The presentation deck
 
@@ -45,7 +53,17 @@ Rebuild after editing the template or the analysis:
 python3 presentation/build_deck.py
 ```
 
+## The three slides
+
+Same pages as the preview, held still.
+
+<img src="assets/slides/01-situation.png" alt="Slide 1, situation and task. On 13 March 2020 the question stopped being hypothetical. 8,932 facilities on the register." width="32%">
+<img src="assets/slides/02-action.png" alt="Slide 2, action. At 5 percent infected, 31 counties are out of beds and 31.6 million people live in them." width="32%">
+<img src="assets/slides/03-result.png" alt="Slide 3, result. 31.6 million of 47.6 million Kenyans live in counties whose beds are gone. The 2017 register checked against 2020." width="32%">
+
 ## Run the interactive app
+
+![County triage map. Each county is coloured by when its surge inpatient beds run out.](docs/hero-county-triage.png)
 
 ```bash
 python3 -m http.server 8000     # then open http://localhost:8000
@@ -129,6 +147,10 @@ imposed by two constants rather than emerging from an SEIR process.
 ## Layout
 
 ```
+assets/hero.png             story poster: question, method, answer
+assets/demo.gif             the three slides, one page at a time
+assets/slides/              stills of those three slides
+assets/social-preview.png   link-card image, not shown on this page
 docs/hero-county-triage.png screenshot of the live map
 index.html                  built artifact - do not edit by hand
 presentation/
