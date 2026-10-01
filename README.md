@@ -1,5 +1,12 @@
 # How prepared is Kenya for a disease outbreak?
 
+[![CI](https://github.com/ChristopherKiokoStrathmore/SLIDES/actions/workflows/ci.yml/badge.svg)](https://github.com/ChristopherKiokoStrathmore/SLIDES/actions/workflows/ci.yml)
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+![County triage map](docs/hero-county-triage.png)
+
+Live map: [https://slides-pink-ten.vercel.app](https://slides-pink-ten.vercel.app)
+
 An interactive map that triages Kenya's 47 counties by the cumulative attack rate
 at which their surge inpatient capacity is exhausted. Move the scenario controls
 and the counties re-triage; the hypothesis is re-tested on every change.
@@ -50,13 +57,15 @@ webfonts, and it falls back to system sans if those don't load.
 
 ## Deploy
 
-**GitHub Pages**, push to `main`; `.github/workflows/pages.yml` publishes the
-repo root. Enable Pages under Settings → Pages → Source: GitHub Actions.
+The live map is [https://slides-pink-ten.vercel.app](https://slides-pink-ten.vercel.app),
+served from Vercel with no build command and publish directory `.`.
 
-**Netlify / Vercel / Cloudflare Pages**, no build command, publish directory `.`.
+**Netlify / Cloudflare Pages**, the same: no build command, publish directory `.`.
 
 **Any static host**, upload `index.html` and `vendor/`. Nothing else is needed
 at runtime; `data/`, `src/` and `test/` are build-time only.
+
+`.github/workflows/ci.yml` runs `node test/verify.js` on every push.
 
 ## Rebuild after changing the analysis
 
@@ -66,11 +75,15 @@ page will quietly keep showing the old ones until you rebuild.
 ```bash
 python3 src/prep_data.py        # county_capacity.csv + geojson -> data/web_data.json
 python3 src/build.py            # data + template            -> index.html
-node test/verify.js             # confirm the app still matches the notebook
+node test/verify.js             # confirm the app still matches the committed county table
 ```
 
 `src/prep_data.py` expects `county_capacity.csv` and `kenya_counties.geojson` in
 the working directory, so run it from `data/`, or edit the paths at the top.
+
+The analysis notebook is not included in this repository. `data/county_capacity.csv`
+is the committed county table the app was built from, and `test/verify.js` checks
+the app against that table.
 
 ## The model
 
@@ -116,6 +129,7 @@ imposed by two constants rather than emerging from an SEIR process.
 ## Layout
 
 ```
+docs/hero-county-triage.png screenshot of the live map
 index.html                  built artifact - do not edit by hand
 presentation/
   covid-capacity-deck.html  built artifact - the 3-slide deck, fully self-contained
@@ -130,13 +144,24 @@ vendor/three.min.js         Three.js r150, the slide 1 facility cloud
 vendor/motion.min.js        Motion One v10.18, spring transitions
 vendor/animate.min.css      Animate.css v4.1.1, entrance utilities
 data/web_data.json          embedded payload: geometry + county metrics
-data/county_capacity.csv    county table from the analysis notebook
+data/county_capacity.csv    committed county table (the analysis notebook is not in this repo)
 data/kenya_counties.geojson source boundaries
 src/app.template.html       the app, with a __DATA__ placeholder
 src/prep_data.py            builds web_data.json
 src/build.py                builds index.html
-test/verify.js              regression test against the notebook's numbers
+test/verify.js              regression test against the committed county table
 ```
+
+## Team and my role
+
+Git history records two contributors:
+
+- Dennis Wambua committed the initial interactive map, the county data, and fullscreen mode.
+- Christopher Nguu Kioko committed the three-slide presentation deck and the opening-slide title.
+
+`presentation/TALKING-POINTS.md` scripts six presenters and leaves their names as placeholders.
+
+<!-- Chris: describe your role -->
 
 ## Sources
 

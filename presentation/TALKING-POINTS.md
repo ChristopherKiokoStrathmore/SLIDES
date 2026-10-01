@@ -123,7 +123,7 @@ persuasive thirty seconds in the deck, so rehearse it.**
 > telling the truth about beds, so everything after this rests on something solid."
 
 - If you have a spare fifteen seconds, add the intuition: *"A bed is a queue. What matters is not how many people arrive, it is how long each one stays. That is the whole calculation."*
-- Do **not** put the formula on the table. If someone wants it, it is in the notebook and in the interactive version, and Speaker 6 will point them there.
+- Do **not** put the formula on the table. If someone wants it, it is in the README and in the interactive version, and Speaker 6 will point them there.
 
 **Hand off:** *"So we let the wave move. [Name]."*
 

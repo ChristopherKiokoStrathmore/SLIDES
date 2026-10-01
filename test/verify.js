@@ -1,4 +1,4 @@
-/* Regression test: the app's arithmetic must match the notebook's.
+/* Regression test: the app's arithmetic must match the committed county table.
    Run with `node test/verify.js` after changing the analysis or the data. */
 const fs = require('fs');
 const path = require('path');
