@@ -179,11 +179,11 @@ test/verify.js              regression test against the committed county table
 Git history records two contributors:
 
 - Dennis Wambua committed the initial interactive map, the county data, and fullscreen mode.
-- Christopher Nguu Kioko committed the three-slide presentation deck and the opening-slide title.
+- Christopher Nguu committed the three-slide presentation deck and the opening-slide title.
 
 `presentation/TALKING-POINTS.md` scripts six presenters and leaves their names as placeholders.
 
-Christopher Nguu Kioko - co-author
+Christopher Nguu - co-author
 
 ## Sources
 
