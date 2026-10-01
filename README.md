@@ -161,7 +161,7 @@ Git history records two contributors:
 
 `presentation/TALKING-POINTS.md` scripts six presenters and leaves their names as placeholders.
 
-<!-- Chris: describe your role -->
+Christopher Nguu Kioko - co-author
 
 ## Sources
 
